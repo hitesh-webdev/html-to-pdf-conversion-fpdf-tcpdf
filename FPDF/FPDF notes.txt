@@ -1,0 +1,190 @@
+$pdf = new FPDF('P','mm',array(100,150));
+
+P(Portrait) (Default) and L(Landscape) orientation
+
+mm (Default), cm, in, pt (units)
+
+A4(Default), A3, A5, Letter, Legal (page sizes)
+
+
+There's no page at the moment, so we have to add one with AddPage().
+
+$pdf->AddPage();
+
+// arguments => orientation, size, rotation(multiple of 90)
+
+
+
+The origin is at the upper-left corner and the current position is by default set at 1 cm from the borders; the margins can be changed with SetMargins().
+
+// arguments => left, top, right (float)
+
+
+
+Before we can print text, it's mandatory to select a font with SetFont().
+
+$pdf->SetFont('Arial','B',16);
+
+Family font can be either a name defined by AddFont() or one of the standard families (case insensitive): Courier, Helvetica or Arial, Times, Symbol, empty string '' (the current family is kept)
+
+Font Style can be B, I, U and empty string '' (regular)
+
+Font size in points (default value is 12)
+
+
+
+A cell is a rectangular area, possibly framed, which contains a line of text. It is output at the current position. We specify its dimensions, its text (centered or aligned), if borders should be drawn, and where the current position moves after it (to the right, below or to the beginning of the next line).
+
+$pdf->Cell(40,10,'Hello World !',1);
+
+// arguments => 
+width (If 0, the cell extends up to the right margin), 
+height, 
+text,
+border ( 0 -> no border, 1 -> frame, L -> LEFT, T -> TOP, R -> RIGHT, B -> BOTTOM), 
+ln (0 -> right, 1 -> to the beginnning of the new line, 2 -> below), 
+align (L or '' -> left align, C -> center, R -> right align), 
+fill (true or false), 
+link(url or identifier returned by AddLink())
+
+Note: Putting 1 is equivalent to putting 0 and calling Ln() just after.
+
+
+
+Remark: the line break can also be done with Ln(). This method additionnaly allows to specify the height of the break.By default, the value equals the height of the last printed cell.
+
+
+
+Finally, the document is closed and sent to the browser with Output().
+
+
+
+Caution: in case when the PDF is sent to the browser, nothing else must be output by the script, neither before nor after (no HTML, not even a space or a carriage return).
+
+
+
+Header() and Footer() methods to process page headers and footers. They are called automatically. They already exist in the FPDF class but do nothing, therefore we have to extend the class and override them.
+
+class PDF extends FPDF
+{
+// Page header
+function Header()
+{
+    // Logo
+    $this->Image('logo.png',10,6,30);
+    // Arial bold 15
+    $this->SetFont('Arial','B',15);
+    // Move to the right
+    $this->Cell(80);
+    // Title
+    $this->Cell(30,10,'Title',1,0,'C');
+    // Line break
+    $this->Ln(20);
+}
+
+// Page footer
+function Footer()
+{
+    // Position at 1.5 cm from bottom
+    $this->SetY(-15);
+    // Arial italic 8
+    $this->SetFont('Arial','I',8);
+    // Page number
+    $this->Cell(0,10,'Page '.$this->PageNo().'/{nb}',0,0,'C');
+}
+}
+
+// Instanciation of inherited class
+$pdf = new PDF();
+
+Note: The total number of pages, it's obtained via the special value {nb}
+
+
+
+
+$pdf->Image('logo.png',60,30,90,0,'PNG');
+
+// arguments => image path, x, y, w, h, extension, url or identifier returned by AddLink().
+
+Note: For width and height
+
+If the value is positive, it represents the width in user unit
+If the value is negative, the absolute value represents the horizontal resolution in dpi 
+
+
+
+
+AliasNbPages(): Defines an alias for the total number of pages. It will be substituted as the document is closed. 
+
+
+
+SetY(float y [, boolean resetX]): Sets the ordinate and optionally moves the current abscissa back to the left margin. If the value is negative, it is relative to the bottom of the page. 
+
+
+
+Note: As soon as a cell would cross a limit in the page (at 2 centimeters from the bottom by default), a break is issued and the font restored. The limit which triggers page breaks can be set with SetAutoPageBreak(). 
+
+SetAutoPageBreak(boolean auto [, float margin]): Enables or disables the automatic page breaking mode. When enabling, the second parameter is the distance from the bottom of the page that defines the triggering limit. By default, the mode is on and the margin is 2 cm. 
+
+
+
+
+GetStringWidth(string s): Returns the length of a string in user unit.
+
+
+
+
+MultiCell(float w, float h, string txt [, mixed border [, string align [, boolean fill]]]): The method used to print the paragraphs is MultiCell(). Each time a line reaches the right extremity of the cell or a carriage return character is met, a line break is issued and a new cell automatically created under the current one. Text is justified by default. 
+
+// attributes =>
+w -> If 0, they extend up to the right margin of the page, 
+h,
+text,
+border -> 0: no border or 1: frame (also L, T, R, B),
+align -> L, C, R or J (default justification)
+fill -> true or false
+
+
+
+// Multi-column code
+
+function SetCol($col)
+{
+    // Set position at a given column
+    $this->col = $col;
+    $x = 10+$col*65;
+    $this->SetLeftMargin($x);
+    $this->SetX($x);
+}
+
+function AcceptPageBreak()
+{
+    // Method accepting or not automatic page break
+    if($this->col<2)
+    {
+        // Go to next column
+        $this->SetCol($this->col+1);
+        // Set ordinate to top
+        $this->SetY($this->y0);
+        // Keep on page
+        return false;
+    }
+    else
+    {
+        // Go back to first column
+        $this->SetCol(0);
+        // Page break
+        return true;
+    }
+}
+
+AcceptPageBreak(): It allows to accept or not an automatic page break. By refusing it and altering the margin and current position, the desired column layout is achieved. 
+
+
+
+ 
+
+
+ 
+
+
